@@ -59,6 +59,8 @@
           [:label (str "Band " (inc idx))]
           [:select {:ref "menu" :value selected
                     :onChange #(let [v (.. % -target -value)]
+                                 ;this causes two state changes (local and app-state), causing
+                                 ;two renders
                                  (put! band-chan [idx v])
                                  (om/set-state! owner [:selected] v))}
            options]])))))
