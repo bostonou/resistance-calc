@@ -54,11 +54,8 @@
 
 (defn band-selector [data owner]
   (reify
-    om/IInitState
-    (init-state [_]
-      {:selected 0})
     om/IRenderState
-    (render-state [_ {:keys [selected band-chan]}]
+    (render-state [_ {:keys [band-chan]}]
       (let [{:keys [omit-ops band idx]} data
             valid-opts (filter (fn [{v :value}] (not (some #{v} omit-ops))) band-options)
             options (map (fn [{:keys [value label]}]
@@ -67,12 +64,8 @@
         (html
          [:div {:class "bandOption"}
           [:label (str "Band " (inc idx))]
-          [:select {:ref "menu" :value selected
-                    :onChange #(let [v (.. % -target -value)]
-                                 ;this causes two state changes (local and app-state), causing
-                                 ;two renders
-                                 (put! band-chan [idx v])
-                                 (om/set-state! owner [:selected] v))}
+          [:select {:ref "menu" :value (:value band)
+                    :onChange #(put! band-chan [idx (.. % -target -value)])}
            options]])))))
 
 (defn register [bands owner]
