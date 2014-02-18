@@ -34,6 +34,14 @@
    [8 9]
    [3 4 9]])
 
+(defn tolerance-indicator [{:keys [tolerance]} owner]
+  (reify
+    om/IRender
+    (render [_]
+      (let [tolerance-str (if (= 0 tolerance) "" (str "±" tolerance "%"))]
+        (html
+         [:p {:id "toleranceValue"} tolerance-str])))))
+
 (defn band-selector [data owner]
   (reify
     om/IInitState
@@ -70,11 +78,14 @@
           [:rect {:id "band4" :x 160 :y 0 :rx 0 :width 7 :height 57 :fill (:color band-4)}]
           [:rect {:id "band5" :x 210 :y 0 :rx 0 :width 7 :height 57 :fill (:color band-5)}]])))))
 
+(defn calc-tolerance [bands]
+  (:tolerance (nth bands 4)))
+
 (defn resistance-calculator [data owner]
   (reify
     om/IInitState
     (init-state [_]
-      {:bands [0 0 0 0 0] :resistance 0 :tolerance 0 :band-chan (chan (sliding-buffer 1))})
+      {:band-chan (chan (sliding-buffer 1))})
     om/IWillMount
     (will-mount [_]
       (if-let [band-chan (om/get-state owner :band-chan)]
@@ -85,6 +96,7 @@
     (render-state [_ {:keys [band-chan]}]
       (html
        [:div
+        (om/build tolerance-indicator (om/graft {:tolerance (calc-tolerance (:bands data))} data))
         (om/build register (:bands data))
         (om/build-all band-selector (map-indexed (fn [idx band]
                                                    (om/graft {:idx idx :band band :omit-ops (get omit-ops idx)} band))
