@@ -34,6 +34,16 @@
    [8 9]
    [3 4 9]])
 
+(defn ohmage-indicator [{:keys [resistance]} owner]
+  (reify
+    om/IRender
+    (render [_]
+      (let [resistance-str (cond
+                            (> resistance 1000000) (str (.toFixed (/ resistance 1000000) 1) "MΩ")
+                            (> resistance 1000) (str (.toFixed (/ resistance 100) 1) "KΩ")
+                            :else (str (.toFixed resistance 1) "Ω"))]
+        (html [:p {:id "resistorValue"} resistance-str])))))
+
 (defn tolerance-indicator [{:keys [tolerance]} owner]
   (reify
     om/IRender
@@ -80,6 +90,14 @@
           [:rect {:id "band4" :x 160 :y 0 :rx 0 :width 7 :height 57 :fill (:color band-4)}]
           [:rect {:id "band5" :x 210 :y 0 :rx 0 :width 7 :height 57 :fill (:color band-5)}]])))))
 
+(defn calc-resistance [[band-1 band-2 band-3 band-4]]
+  (let [base-resistance (+ (* 100 (:value band-1)) (* 10 (:value band-2)) (:value band-3))
+        multiplier (condp = (:value band-4)
+                     10 0.1
+                     11 0.01
+                     (Math/pow 10 (:value band-4)))]
+    (* base-resistance multiplier)))
+
 (defn calc-tolerance [bands]
   (:tolerance (nth bands 4)))
 
@@ -98,6 +116,7 @@
     (render-state [_ {:keys [band-chan]}]
       (html
        [:div
+        (om/build ohmage-indicator (om/graft {:resistance (calc-resistance (:bands data))} data))
         (om/build tolerance-indicator (om/graft {:tolerance (calc-tolerance (:bands data))} data))
         (om/build register (:bands data))
         (om/build-all band-selector (map-indexed (fn [idx band]
