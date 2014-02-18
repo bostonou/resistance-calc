@@ -27,6 +27,13 @@
    {:value 10 :tolerance 5 :color "#FFD700" :label "Gold"}
    {:value 11 :tolerance 10 :color "#C0C0C0" :label "Silver"}])
 
+(def omit-ops
+  [[10 11]
+   [10 11]
+   [10 11]
+   [8 9]
+   [3 4 9]])
+
 (defn band-selector [data owner]
   (reify
     om/IInitState
@@ -35,9 +42,10 @@
     om/IRenderState
     (render-state [_ {:keys [selected band-chan]}]
       (let [{:keys [omit-ops band idx]} data
+            valid-opts (filter (fn [{v :value}] (not (some #{v} omit-ops))) band-options)
             options (map (fn [{:keys [value label]}]
                            [:option {:value value} label])
-                         band-options)]
+                         valid-opts)]
         (html
          [:div {:class "bandOption"}
           [:label (str "Band " (inc idx))]
@@ -79,7 +87,7 @@
        [:div
         (om/build register (:bands data))
         (om/build-all band-selector (map-indexed (fn [idx band]
-                                                   (om/graft {:idx idx :band band :omit-ops []} band))
+                                                   (om/graft {:idx idx :band band :omit-ops (get omit-ops idx)} band))
                                                  (:bands data))
                       {:init-state {:band-chan band-chan}})]))))
 
